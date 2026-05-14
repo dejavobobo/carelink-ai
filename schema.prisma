@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  NURSE
+  PRACTITIONER
+  ADMIN
+}
+
+enum AppointmentType {
+  TELEHEALTH
+  HOMECARE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  name               String
+  email              String             @unique
+  password           String
+  role               Role               @default(PATIENT)
+  latitude           Float?
+  longitude          Float?
+  providerProfile    ProviderProfile?
+  appointmentsPatient Appointment[]      @relation("patientAppointments")
+  appointmentsProvider Appointment[]      @relation("providerAppointments")
+  conversationLogs   ConversationLog[]
+  createdAt          DateTime           @default(now())
+}
+
+model ProviderProfile {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String   @unique
+  specialization  String
+  licenseNumber   String
+  bio             String?
+  availability    Json
+  accepted        Boolean  @default(false)
+  hourlyRate      Int?
+  createdAt       DateTime @default(now())
+}
+
+model Appointment {
+  id            String            @id @default(cuid())
+  patient       User              @relation("patientAppointments", fields: [patientId], references: [id])
+  patientId     String
+  provider      User              @relation("providerAppointments", fields: [providerId], references: [id])
+  providerId    String
+  type          AppointmentType
+  status        AppointmentStatus @default(PENDING)
+  scheduledTime DateTime
+  location      String?
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model ConversationLog {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  messages  Json
+  createdAt DateTime @default(now())
+}
